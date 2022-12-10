@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import scrolledtext
 from tkinter import messagebox
 
-HOST = socket.gethostname
+HOST = socket.gethostname()
 PORT = 1234
 
 DARK_GREY = '#121212'

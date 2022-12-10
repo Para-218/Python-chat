@@ -1,7 +1,7 @@
 import socket
 import threading
 
-HOST = '127.0.0.1'
+HOST = socket.gethostname()
 PORT = 1234 # You can use any port between 0 to 65535
 LISTENER_LIMIT = 5
 active_clients = [] # List of all currently connected users
