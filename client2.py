@@ -3,6 +3,7 @@ import threading
 import tkinter as tk
 from tkinter import scrolledtext
 from tkinter import messagebox
+from tkinter import ttk
 
 HOST = socket.gethostname()
 PORT = 1234
@@ -16,9 +17,9 @@ BUTTON_FONT = ("Helvetica", 15)
 SMALL_FONT = ("Helvetica", 13)
 
 # Creating a socket object
-# AF_INET: we are going to use IPv4 addresses
-# SOCK_STREAM: we are using TCP packets for communication
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+active_user = ['GROUP']
+is_connect = False
 
 def add_message(message):
     message_box.config(state=tk.NORMAL)
@@ -26,25 +27,34 @@ def add_message(message):
     message_box.config(state=tk.DISABLED)
 
 def connect():
-
     # try except block
-    try:
-
-        # Connect to the server
-        client.connect((HOST, PORT))
-        print("Successfully connected to server")
-        add_message("[SERVER] Successfully connected to the server")
-    except:
-        messagebox.showerror("Unable to connect to server", f"Unable to connect to server {HOST} {PORT}")
+    global is_connect
+    if not is_connect:
+        try:
+            # Connect to the server
+            client.connect((HOST, PORT))
+            print("Successfully connected to server")
+            add_message("[SERVER] Successfully connected to the server")
+            is_connect = not is_connect
+        except:
+            messagebox.showerror("Unable to connect to server", f"Unable to connect to server {HOST} {PORT}")
 
     username = username_textbox.get()
-    if username != '':
-        client.sendall(username.encode())
-    else:
+    if username == '':
         messagebox.showerror("Invalid username", "Username cannot be empty")
-
+        return
+    else:
+        client.sendall(username.encode())
+        response = client.recv(2048).decode()
+        if response == '/duplicate':
+            messagebox.showerror("Invalid username", "Username already chose")
+            return
+    global active_user
+    list_user = client.recv(2048).decode('utf-8')
+    active_user = list_user.split('/')
+    active_user.append('GROUP')
+    active_header['value'] = active_user
     threading.Thread(target=listen_for_messages_from_server, args=(client, )).start()
-
     username_textbox.config(state=tk.DISABLED)
     username_button.config(state=tk.DISABLED)
 
@@ -83,7 +93,11 @@ username_textbox.pack(side=tk.LEFT)
 username_button = tk.Button(top_frame, text="Join", font=BUTTON_FONT, bg=OCEAN_BLUE, fg=WHITE, command=connect)
 username_button.pack(side=tk.LEFT, padx=15)
 
-message_textbox = tk.Entry(bottom_frame, font=FONT, bg=MEDIUM_GREY, fg=WHITE, width=38)
+active_header = ttk.Combobox(bottom_frame, values = active_user, width = 10, height= 26.5)
+active_header.pack(side=tk.LEFT, padx= 10)
+active_header.set('GROUP')
+
+message_textbox = tk.Entry(bottom_frame, font=FONT, bg=MEDIUM_GREY, fg=WHITE, width=28)
 message_textbox.pack(side=tk.LEFT, padx=10)
 
 message_button = tk.Button(bottom_frame, text="Send", font=BUTTON_FONT, bg=OCEAN_BLUE, fg=WHITE, command=send_message)
@@ -93,24 +107,18 @@ message_box = scrolledtext.ScrolledText(middle_frame, font=SMALL_FONT, bg=MEDIUM
 message_box.config(state=tk.DISABLED)
 message_box.pack(side=tk.TOP)
 
-
 def listen_for_messages_from_server(client):
-
     while 1:
-
         message = client.recv(2048).decode('utf-8')
         if message != '':
             username = message.split("~")[0]
             content = message.split('~')[1]
-
             add_message(f"[{username}] {content}")
-            
         else:
             messagebox.showerror("Error", "Message recevied from client is empty")
 
 # main function
 def main():
-
     root.mainloop()
     
 if __name__ == '__main__':

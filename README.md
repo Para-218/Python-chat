@@ -3,4 +3,4 @@
 first intial connect
 cl: send username
 sv: response accept or not
-cl
+sv: give list active user
