@@ -61,6 +61,7 @@ def connect():
 def send_message():
     message = message_textbox.get()
     if message != '':
+        message = active_header.get() + '/' + message
         client.sendall(message.encode())
         message_textbox.delete(0, len(message))
     else:
@@ -110,6 +111,11 @@ message_box.pack(side=tk.TOP)
 def listen_for_messages_from_server(client):
     while 1:
         message = client.recv(2048).decode('utf-8')
+        if 'SERVER~' in message and 'added to the chat' in message:
+            new_username = message[7:-18]
+            if new_username not in active_user:
+                active_user.append(new_username)
+                active_header['value'] = active_user
         if message != '':
             username = message.split("~")[0]
             content = message.split('~')[1]

@@ -1,5 +1,6 @@
 import socket
 import threading
+import time
 
 HOST = socket.gethostname()
 PORT = 1234 # You can use any port between 0 to 65535
@@ -11,11 +12,14 @@ dictionary_active_clients = {} # Dict to find client_socket
 def listen_for_messages(client, username):
     while 1:
         message = client.recv(2048).decode('utf-8')
-        if message != '':
-            final_msg = username + '~' + message
+        if 'GROUP/' in message:
+            final_msg = username + '~' + message.split('/')[1]
             send_messages_to_all(final_msg)
         else:
-            print(f"The message send from client {username} is empty")
+            dest_user = message.split('/')[0]
+            final_msg = username + ' talk to ' + dest_user + '~' + message.split('/')[1]
+            send_message_to_client(dictionary_active_clients[dest_user], final_msg)
+            send_message_to_client(dictionary_active_clients[username], final_msg)
 
 # Function to send message to a single client
 def send_message_to_client(client, message):
@@ -37,6 +41,7 @@ def client_handler(client):
             dictionary_active_clients[username] = client
             #send list active user
             client.send(('/'.join(active_clients)).encode())
+            time.sleep(0.5)
             prompt_message = "SERVER~" + f"{username} added to the chat"
             send_messages_to_all(prompt_message)
             break
