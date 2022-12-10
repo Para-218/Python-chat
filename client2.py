@@ -67,6 +67,23 @@ def send_message():
     else:
         messagebox.showerror("Empty message", "Message cannot be empty")
 
+def send_file():
+    filename = message_textbox.get()
+    try:
+        f = open(filename,'rb')
+        f.close()
+    except FileNotFoundError:
+        messagebox.showerror("Not found", "The requested file does not exist.")
+        return
+    client.send('/fileTransfer'.encode())
+    client.send(filename.encode())
+    #client.send(bytes(filename,"utf-8"))
+    with open(filename,'rb') as f:
+        data = f.read()
+        dataLen = len(data)
+        client.send(dataLen.to_bytes(4,'big'))
+        client.send(data)
+
 root = tk.Tk()
 root.geometry("600x600")
 root.title("Messenger Client")
@@ -88,7 +105,7 @@ bottom_frame.grid(row=2, column=0, sticky=tk.NSEW)
 username_label = tk.Label(top_frame, text="Enter username:", font=FONT, bg=DARK_GREY, fg=WHITE)
 username_label.pack(side=tk.LEFT, padx=10)
 
-username_textbox = tk.Entry(top_frame, font=FONT, bg=MEDIUM_GREY, fg=WHITE, width=23)
+username_textbox = tk.Entry(top_frame, font=FONT, bg=MEDIUM_GREY, fg=WHITE, width=25)
 username_textbox.pack(side=tk.LEFT)
 
 username_button = tk.Button(top_frame, text="Join", font=BUTTON_FONT, bg=OCEAN_BLUE, fg=WHITE, command=connect)
@@ -98,11 +115,14 @@ active_header = ttk.Combobox(bottom_frame, values = active_user, width = 10, hei
 active_header.pack(side=tk.LEFT, padx= 10)
 active_header.set('GROUP')
 
-message_textbox = tk.Entry(bottom_frame, font=FONT, bg=MEDIUM_GREY, fg=WHITE, width=28)
+message_textbox = tk.Entry(bottom_frame, font=FONT, bg=MEDIUM_GREY, fg=WHITE, width=25)
 message_textbox.pack(side=tk.LEFT, padx=10)
 
-message_button = tk.Button(bottom_frame, text="Send", font=BUTTON_FONT, bg=OCEAN_BLUE, fg=WHITE, command=send_message)
-message_button.pack(side=tk.LEFT, padx=10)
+message_sendbutton = tk.Button(bottom_frame, text="Send", font=BUTTON_FONT, bg=OCEAN_BLUE, fg=WHITE, command=send_message)
+message_sendbutton.pack(side=tk.LEFT, padx=10)
+
+message_filebutton = tk.Button(bottom_frame, text="File", font=BUTTON_FONT, bg=OCEAN_BLUE, fg=WHITE, command=send_file)
+message_filebutton.pack(side=tk.LEFT, padx=10)
 
 message_box = scrolledtext.ScrolledText(middle_frame, font=SMALL_FONT, bg=MEDIUM_GREY, fg=WHITE, width=67, height=26.5)
 message_box.config(state=tk.DISABLED)
@@ -116,7 +136,9 @@ def listen_for_messages_from_server(client):
             if new_username not in active_user:
                 active_user.append(new_username)
                 active_header['value'] = active_user
-        if message != '':
+        if message != '/receiveFile':
+            pass
+        elif message != '':
             username = message.split("~")[0]
             content = message.split('~')[1]
             add_message(f"[{username}] {content}")

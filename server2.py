@@ -8,11 +8,27 @@ LISTENER_LIMIT = 5
 active_clients = [] # List of all currently connected users
 dictionary_active_clients = {} # Dict to find client_socket
 
+
+# Function for file transfer
+def fileTransfer(client, username):
+    fileName = client.recv(2048).decode('utf-8')
+    remaining = int.from_bytes(client.recv(4),'big')
+    f = open(fileName,"wb")
+    while remaining:
+        data = client.recv(min(remaining,4096))
+        remaining -= len(data)
+        f.write(data)
+    f.close()
+    print('Receive file success')
+
 # Function to listen for upcoming messages from a client
 def listen_for_messages(client, username):
     while 1:
         message = client.recv(2048).decode('utf-8')
-        if 'GROUP/' in message:
+        if message == '/fileTransfer':
+            fileTransfer(client, username)
+            continue
+        elif 'GROUP/' in message:
             final_msg = username + '~' + message.split('/')[1]
             send_messages_to_all(final_msg)
         else:

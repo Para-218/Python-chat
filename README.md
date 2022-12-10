@@ -1,6 +1,9 @@
 # Python-chat
 
 first intial connect
-cl: send username
-sv: response accept or not
-sv: give list active user
+client: send username
+server: response accept or duplicate
+server: give list active user
+
+if new_user add -> client active_user list add new_user
+if private talk is use server only send mess to both want to talk
