@@ -5,13 +5,17 @@ import time
 HOST = socket.gethostname()
 PORT = 1234 # You can use any port between 0 to 65535
 LISTENER_LIMIT = 5
+
 active_clients = [] # List of all currently connected users
 dictionary_active_clients = {} # Dict to find client_socket
-
+fileTransferCondition = threading.Condition()
 
 # Function for file transfer
 def fileTransfer(client, username):
-    fileName = client.recv(2048).decode('utf-8')
+    fileName = client.recv(2048).decode()
+    client.send('send_user'.encode())
+    dest_user = client.recv(2048).decode()
+    client.send('send_data'.encode())
     remaining = int.from_bytes(client.recv(4),'big')
     f = open(fileName,"wb")
     while remaining:
@@ -20,6 +24,21 @@ def fileTransfer(client, username):
         f.write(data)
     f.close()
     print('Receive file success')
+    if dest_user == 'GROUP': #send file to all active user
+        for user in active_clients:
+            if user != username:
+                memberClient = dictionary_active_clients[user]
+                #send notify message
+                memberClient.send("/receiveFile".encode())
+                #send file name
+                memberClient.send(bytes(fileName,"utf-8"))
+                #send source user
+                memberClient.send(bytes(username,"utf-8"))
+                with open(fileName,'rb') as f:
+                    data = f.read()
+                    dataLen = len(data)
+                    memberClient.send(dataLen.to_bytes(4,'big'))
+                    memberClient.send(data)
 
 # Function to listen for upcoming messages from a client
 def listen_for_messages(client, username):
@@ -33,7 +52,7 @@ def listen_for_messages(client, username):
             send_messages_to_all(final_msg)
         else:
             dest_user = message.split('/')[0]
-            final_msg = username + ' talk to ' + dest_user + '~' + message.split('/')[1]
+            final_msg = username + ' whisper to ' + dest_user + '~' + message.split('/')[1]
             send_message_to_client(dictionary_active_clients[dest_user], final_msg)
             send_message_to_client(dictionary_active_clients[username], final_msg)
 

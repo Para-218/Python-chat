@@ -76,8 +76,12 @@ def send_file():
         messagebox.showerror("Not found", "The requested file does not exist.")
         return
     client.send('/fileTransfer'.encode())
+    #Send file name
     client.send(filename.encode())
-    #client.send(bytes(filename,"utf-8"))
+    client.recv(2048)
+    #send header
+    client.send((active_header.get()).encode())
+    client.recv(2048)
     with open(filename,'rb') as f:
         data = f.read()
         dataLen = len(data)
@@ -128,6 +132,21 @@ message_box = scrolledtext.ScrolledText(middle_frame, font=SMALL_FONT, bg=MEDIUM
 message_box.config(state=tk.DISABLED)
 message_box.pack(side=tk.TOP)
 
+def listen_file_from_server(client):
+    #file name
+    fileName = client.recv(2048).decode('utf-8')
+    #source user
+    username = client.recv(2048).decode('utf-8')
+    remaining = int.from_bytes(client.recv(4),'big')
+    f = open(fileName,"wb")
+    while remaining:
+        data = client.recv(min(remaining,4096))
+        remaining -= len(data)
+        f.write(data)
+    f.close()
+    add_message(f"[{username}] send file {fileName}")
+    print(fileName, username)
+
 def listen_for_messages_from_server(client):
     while 1:
         message = client.recv(2048).decode('utf-8')
@@ -136,8 +155,8 @@ def listen_for_messages_from_server(client):
             if new_username not in active_user:
                 active_user.append(new_username)
                 active_header['value'] = active_user
-        if message != '/receiveFile':
-            pass
+        if message == '/receiveFile':
+            listen_file_from_server(client)
         elif message != '':
             username = message.split("~")[0]
             content = message.split('~')[1]
