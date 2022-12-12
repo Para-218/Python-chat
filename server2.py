@@ -12,10 +12,11 @@ fileTransferCondition = threading.Condition()
 
 # Function for file transfer
 def fileTransfer(client, username):
+    #client.send('send_filename'.encode())
     fileName = client.recv(2048).decode()
-    client.send('send_user'.encode())
+    #client.send('send_dest_user'.encode())
     dest_user = client.recv(2048).decode()
-    client.send('send_data'.encode())
+    #client.send('send_data'.encode())
     remaining = int.from_bytes(client.recv(4),'big')
     f = open(fileName,"wb")
     while remaining:
@@ -30,10 +31,13 @@ def fileTransfer(client, username):
                 memberClient = dictionary_active_clients[user]
                 #send notify message
                 memberClient.send("/receiveFile".encode())
+                time.sleep(0.2)
                 #send file name
                 memberClient.send(bytes(fileName,"utf-8"))
+                time.sleep(0.2)
                 #send source user
                 memberClient.send(bytes(username,"utf-8"))
+                time.sleep(0.2)
                 with open(fileName,'rb') as f:
                     data = f.read()
                     dataLen = len(data)

@@ -1,5 +1,6 @@
 import socket
 import threading
+import time
 import tkinter as tk
 from tkinter import scrolledtext
 from tkinter import messagebox
@@ -76,17 +77,20 @@ def send_file():
         messagebox.showerror("Not found", "The requested file does not exist.")
         return
     client.send('/fileTransfer'.encode())
+    time.sleep(0.2)
     #Send file name
     client.send(filename.encode())
-    client.recv(2048)
+    time.sleep(0.2)
     #send header
     client.send((active_header.get()).encode())
-    client.recv(2048)
+    time.sleep(0.2)
+    #send data
     with open(filename,'rb') as f:
         data = f.read()
         dataLen = len(data)
         client.send(dataLen.to_bytes(4,'big'))
         client.send(data)
+    message_textbox.delete(0, len(filename))
 
 root = tk.Tk()
 root.geometry("600x600")
@@ -137,6 +141,7 @@ def listen_file_from_server(client):
     fileName = client.recv(2048).decode('utf-8')
     #source user
     username = client.recv(2048).decode('utf-8')
+    #receive data
     remaining = int.from_bytes(client.recv(4),'big')
     f = open(fileName,"wb")
     while remaining:
@@ -144,7 +149,7 @@ def listen_file_from_server(client):
         remaining -= len(data)
         f.write(data)
     f.close()
-    add_message(f"[{username}] send file {fileName}")
+    #add_message(f"[{username}] send file {fileName}")
     print(fileName, username)
 
 def listen_for_messages_from_server(client):
