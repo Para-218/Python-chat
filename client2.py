@@ -92,6 +92,14 @@ def send_file():
         client.send(data)
     message_textbox.delete(0, len(filename))
 
+def exit():
+    client.sendall('/exit'.encode())
+    username_textbox.config(state=tk.NORMAL)
+    username_button.config(state=tk.NORMAL)
+    exit_button.config(state=tk.DISABLED)
+    global is_connect
+    is_connect = False
+
 root = tk.Tk()
 root.geometry("600x600")
 root.title("Messenger Client")
@@ -113,11 +121,14 @@ bottom_frame.grid(row=2, column=0, sticky=tk.NSEW)
 username_label = tk.Label(top_frame, text="Enter username:", font=FONT, bg=DARK_GREY, fg=WHITE)
 username_label.pack(side=tk.LEFT, padx=10)
 
-username_textbox = tk.Entry(top_frame, font=FONT, bg=MEDIUM_GREY, fg=WHITE, width=25)
+username_textbox = tk.Entry(top_frame, font=FONT, bg=MEDIUM_GREY, fg=WHITE, width=20)
 username_textbox.pack(side=tk.LEFT)
 
 username_button = tk.Button(top_frame, text="Join", font=BUTTON_FONT, bg=OCEAN_BLUE, fg=WHITE, command=connect)
-username_button.pack(side=tk.LEFT, padx=15)
+username_button.pack(side=tk.LEFT, padx=10)
+
+exit_button = tk.Button(top_frame, text="Exit", font=BUTTON_FONT, bg=OCEAN_BLUE, fg=WHITE, command=exit)
+exit_button.pack(side=tk.LEFT, padx=10)
 
 active_header = ttk.Combobox(bottom_frame, values = active_user, width = 10, height= 26.5)
 active_header.pack(side=tk.LEFT, padx= 10)
@@ -160,8 +171,16 @@ def listen_for_messages_from_server(client):
             if new_username not in active_user:
                 active_user.append(new_username)
                 active_header['value'] = active_user
+        elif 'SERVER~' in message and 'exit the chat' in message:
+            new_username = message[7:-14]
+            if new_username in active_user:
+                active_user.remove(new_username)
+                active_header['value'] = active_user
         if message == '/receiveFile':
             listen_file_from_server(client)
+        elif message == '/close_socket':
+            client.close()
+            break
         elif message != '':
             username = message.split("~")[0]
             content = message.split('~')[1]

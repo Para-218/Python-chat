@@ -3,12 +3,11 @@ import threading
 import time
 
 HOST = socket.gethostname()
-PORT = 1234 # You can use any port between 0 to 65535
+PORT = 1234
 LISTENER_LIMIT = 5
 
 active_clients = [] # List of all currently connected users
 dictionary_active_clients = {} # Dict to find client_socket
-fileTransferCondition = threading.Condition()
 
 # Function for file transfer
 def fileTransfer(client, username):
@@ -51,6 +50,13 @@ def listen_for_messages(client, username):
         if message == '/fileTransfer':
             fileTransfer(client, username)
             continue
+        elif message == '/exit':
+            send_messages_to_all("SERVER~" + f"{username} exit the chat")
+            client.send('/close_socket'.encode())
+            client.close()
+            active_clients.remove(username)
+            dictionary_active_clients.pop(username)
+            break
         elif 'GROUP/' in message:
             final_msg = username + '~' + message.split('/')[1]
             send_messages_to_all(final_msg)
