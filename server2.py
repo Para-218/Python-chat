@@ -42,6 +42,28 @@ def fileTransfer(client, username):
                     dataLen = len(data)
                     memberClient.send(dataLen.to_bytes(4,'big'))
                     memberClient.send(data)
+        time.sleep(0.2)
+        send_messages_to_all(f'{username}~send {fileName} to group chat')
+    else:
+        for user in active_clients:
+            if user == dest_user or user == username:
+                memberClient = dictionary_active_clients[user]
+                #send notify message
+                memberClient.send("/receiveFile".encode())
+                time.sleep(0.2)
+                #send file name
+                memberClient.send(bytes(fileName,"utf-8"))
+                time.sleep(0.2)
+                #send source user
+                memberClient.send(bytes(username,"utf-8"))
+                time.sleep(0.2)
+                with open(fileName,'rb') as f:
+                    data = f.read()
+                    dataLen = len(data)
+                    memberClient.send(dataLen.to_bytes(4,'big'))
+                    memberClient.send(data)
+                time.sleep(0.2)
+                send_message_to_client(memberClient, f'{username}~send {fileName} to [{user}]')
 
 # Function to listen for upcoming messages from a client
 def listen_for_messages(client, username):
@@ -64,7 +86,8 @@ def listen_for_messages(client, username):
             dest_user = message.split('/')[0]
             final_msg = username + ' whisper to ' + dest_user + '~' + message.split('/')[1]
             send_message_to_client(dictionary_active_clients[dest_user], final_msg)
-            send_message_to_client(dictionary_active_clients[username], final_msg)
+            if dest_user != username:
+                send_message_to_client(dictionary_active_clients[username], final_msg)
 
 # Function to send message to a single client
 def send_message_to_client(client, message):
