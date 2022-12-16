@@ -1,9 +1,18 @@
 # Python-chat
+Client - Serve
 
-first intial connect
-client: send username
-server: response accept or duplicate
-server: give list active user
+cmd line:
+python server2.py
+python client2.py
 
-if new_user add -> client active_user list add new_user
-if private talk is use server only send mess to both want to talk
+begin:
+  input [username]
+  press JOIN
+exit:
+  press EXIT
+send message:
+  input [message]
+  press SEND
+send file:
+  input [file name]
+  press FILE
